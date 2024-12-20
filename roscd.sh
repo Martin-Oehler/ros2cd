@@ -73,12 +73,14 @@ roscd() {
             local real_package_file
             real_package_file=$(readlink -f "$package_file")
 
-            # Get the directory containing the real package.xml
-            local pkg_dir
-            pkg_dir="$(dirname "$real_package_file")"
+            # Extract the <name></name> field from the package.xml
+            # We assume the file is a valid package.xml and has one <name> tag.
+            local pkg_xml_name
+            pkg_xml_name=$(grep "<name>" "$real_package_file" | sed -E 's/.*<name>([^<]+)<\/name>.*/\1/')
 
-            # Check if the directory name matches the pkg_name
-            if [ "$(basename "$pkg_dir")" = "$pkg_name" ]; then
+            if [ "$pkg_xml_name" = "$pkg_name" ]; then
+                local pkg_dir
+                pkg_dir="$(dirname "$real_package_file")"
                 cd "$pkg_dir" || return 1
                 return 0
             fi
