@@ -3,18 +3,11 @@ _roscd_autocomplete() {
     # Clear previously generated completions
     COMPREPLY=()
 
-    # The current word being completed is stored in $COMP_CWORD, and the array of words is COMP_WORDS.
-    # Typically, we use the last word for generating completion matches.
     local cur="${COMP_WORDS[COMP_CWORD]}"
-
-    # Get the list of packages. We redirect stderr to /dev/null to avoid error messages if ros2 is not sourced yet.
     local packages
     packages=$(ros2 pkg list 2>/dev/null)
 
-    # Use 'compgen' to generate completions from the list of packages.
-    # '-W' takes a list of words, and '-- "$cur"' makes sure we only match those words that start with the user's input.
     COMPREPLY=($(compgen -W "${packages}" -- "$cur"))
-
     return 0
 }
 
@@ -25,7 +18,7 @@ roscd() {
     # Check for help arguments
     if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
         echo "Usage: roscd [<pkg_name>]"
-        echo "  If <pkg_name> is given, cd into the directory containing the package.xml file for that package."
+        echo "  If <pkg_name> is given, cd into the directory containing the package installation."
         echo "  If no argument is given, tries to cd into COLCON_PREFIX_PATH/../src if it exists,"
         echo "  otherwise into COLCON_PREFIX_PATH if it exists."
         return 0
@@ -33,9 +26,7 @@ roscd() {
 
     # If no argument is given, go to the workspace root
     if [ -z "$1" ]; then
-        # If COLCON_PREFIX_PATH is set, attempt to go to ../src or itself
         if [ -n "$COLCON_PREFIX_PATH" ]; then
-            # Strip trailing slash if any, to avoid double slashes
             local cpp_path="${COLCON_PREFIX_PATH%/}"
 
             if [ -d "$cpp_path/../src" ]; then
@@ -54,7 +45,6 @@ roscd() {
         fi
     fi
 
-    # Beyond this point, we have a package name argument.
     local pkg_name="$1"
 
     # If AMENT_PREFIX_PATH is not set or empty, we cannot proceed with package search.
@@ -67,24 +57,26 @@ roscd() {
     IFS=':' read -r -a paths <<< "$AMENT_PREFIX_PATH"
 
     for prefix in "${paths[@]}"; do
-        # Use find with -L to follow symlinks
-        while IFS= read -r package_file; do
-            # Resolve the real path of package_file (in case it's a symlink)
-            local real_package_file
-            real_package_file=$(readlink -f "$package_file")
+        # Check if prefix/share/ament_index/resource_index/packages/<pkg_name> exists
+        local index_dir="$prefix/share/ament_index/resource_index/packages"
+        if [ -f "$index_dir/$pkg_name" ]; then
+            # We found the package in this prefix
+            local pkg_dir="$prefix/share/$pkg_name"
+            local pkg_xml="$pkg_dir/package.xml"
 
-            # Extract the <name></name> field from the package.xml
-            # We assume the file is a valid package.xml and has one <name> tag.
-            local pkg_xml_name
-            pkg_xml_name=$(grep "<name>" "$real_package_file" | sed -E 's/.*<name>([^<]+)<\/name>.*/\1/')
-
-            if [ "$pkg_xml_name" = "$pkg_name" ]; then
-                local pkg_dir
-                pkg_dir="$(dirname "$real_package_file")"
+            if [ -L "$pkg_xml" ]; then
+                # package.xml is a symlink, follow it
+                local real_pkg_xml
+                real_pkg_xml=$(readlink -f "$pkg_xml")
+                local real_pkg_dir
+                real_pkg_dir=$(dirname "$real_pkg_xml")
+                cd "$real_pkg_dir" || return 1
+            else
+                # package.xml is not a symlink, just cd into pkg_dir
                 cd "$pkg_dir" || return 1
-                return 0
             fi
-        done < <(find -L "$prefix" -type f -name package.xml 2>/dev/null)
+            return 0
+        fi
     done
 
     echo "Package '$pkg_name' not found."

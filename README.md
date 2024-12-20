@@ -19,7 +19,6 @@ roscd
 ````
 
 # Details
-The script changes the current directory to the folder of the package which is used for execution in the current environment (i.e. the same folder that is used to execute launch files with `ros2 launch <pkg_name>`). This means, in general, it will take you to the install folder of a package. If symlink build is enabled, the script changes to the respective source folder instead. Overlays are also respected.
+The script changes the current directory to the folder of the package which is used for execution in the current environment. It uses the same mechanism to determine the package path as `ros2 launch`. In general, it will take you to the share directory of a package in the install folder. If symlink build is enabled, the script changes to the respective source folder instead.
 
-The script uses the `AMENT_PREFIX_PATH` environment variable to search for packages. Packages are identified by a `package.xml` file. If this file is a symlink, it is followed to the source directory. The workspace root is identified with the `COLCON_PREFIX_PATH` environment variable.
 
