@@ -1,5 +1,10 @@
+# Check if function exists already
+if type roscd &>/dev/null; then
+    echo "${BASH_SOURCE[0]}:${LINENO}: [Warning] A command, alias, or function named 'roscd' already exists and may interfere with this script."
+fi
+
 # Auto completion
-_roscd_autocomplete() {
+function _roscd_autocomplete() {
     # Clear previously generated completions
     COMPREPLY=()
 
@@ -14,7 +19,7 @@ _roscd_autocomplete() {
 # Register the completion function for the roscd command.
 complete -F _roscd_autocomplete roscd
 
-roscd() {
+function roscd() {
     # Check for help arguments
     if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
         echo "Usage: roscd [<pkg_name>]"
