@@ -1,4 +1,5 @@
 # Auto completion
+#!/bin/bash
 _roscd_autocomplete() {
     # Clear previously generated completions
     COMPREPLY=()
