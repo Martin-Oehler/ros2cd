@@ -1,6 +1,8 @@
 # Check if function exists already
-if type roscd &>/dev/null; then
-    echo "${BASH_SOURCE[0]}:${LINENO}: [Warning] A command, alias, or function named 'roscd' already exists and may interfere with this script."
+if [ -z "${_ROS2CD_DEFINED}" ]; then
+    if type roscd &>/dev/null; then
+        echo "${BASH_SOURCE[0]}:${LINENO}: [Warning] A command, alias, or function named 'roscd' already exists and may interfere with this script."
+    fi
 fi
 
 # Auto completion
@@ -87,3 +89,6 @@ function roscd() {
     echo "Package '$pkg_name' not found."
     return 1
 }
+
+# Mark function as defined
+_ROS2CD_DEFINED=1
