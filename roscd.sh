@@ -19,7 +19,10 @@ function _roscd_autocomplete() {
 }
 
 # Register the completion function for the roscd command.
-complete -F _roscd_autocomplete roscd
+if type complete &>/dev/null; then
+  # 'complete' is a Bash builtin; avoid errors in pure Zsh
+  complete -F _roscd_autocomplete roscd
+fi
 
 function roscd() {
     # Check for help arguments
@@ -60,11 +63,8 @@ function roscd() {
         return 1
     fi
 
-    # Split AMENT_PREFIX_PATH by ':'
-    IFS=':' read -r -a paths <<< "$AMENT_PREFIX_PATH"
-
-    for prefix in "${paths[@]}"; do
-        # Check if prefix/share/ament_index/resource_index/packages/<pkg_name> exists
+    # Use 'tr' to split AMENT_PREFIX_PATH on ':', then loop
+    for prefix in $(echo "$AMENT_PREFIX_PATH" | tr ':' '\n'); do
         local index_dir="$prefix/share/ament_index/resource_index/packages"
         if [ -f "$index_dir/$pkg_name" ]; then
             # We found the package in this prefix
